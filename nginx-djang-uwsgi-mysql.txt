@@ -1,0 +1,557 @@
+##### Ubuntu 20 #####
+
+Firewall settings using iptables if you are using uwf allow accordingly
+
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8000 -j ACCEPT
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8080 -j ACCEPT
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+sudo netfilter-persistent save
+
+connecting VSCode remote
+nano ~/.ssh/authorized_keys
+nano /etc/ssh/sshd_config
+systemctl restart sshd
+
+
+
+How to increase the open file limits on Ubuntu
+
+ulimit -a
+
+core file size          (blocks, -c) 0
+data seg size           (kbytes, -d) unlimited
+scheduling priority             (-e) 0
+file size               (blocks, -f) unlimited
+pending signals                 (-i) 47468
+max locked memory       (kbytes, -l) 65536
+max memory size         (kbytes, -m) unlimited
+open files                      (-n) 1024 <---------- This option
+pipe size            (512 bytes, -p) 8
+POSIX message queues     (bytes, -q) 819200
+real-time priority              (-r) 0
+stack size              (kbytes, -s) 8192
+cpu time               (seconds, -t) unlimited
+max user processes              (-u) 47468
+virtual memory          (kbytes, -v) unlimited
+file locks                      (-x) unlimited
+
+
+ulimit -n 27000 
+
+Note: 27000 is the new value we want to set
+
+Caution : for high number can increase risk of server being taken down
+
+
+
+
+
+
+##### MySQL #####
+
+
+Change mysql root password
+
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'NewPassword';
+
+
+
+Exporting mysql database on old server
+
+mysql -u username -p database_name > file.sql
+
+
+
+mysql -u root -p
+
+CREATE DATABASE IF NOT EXISTS real_realancer CHARACTER SET utf8;
+
+CREATE USER 'souq_delivery'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
+
+GRANT ALL PRIVILEGES ON souq_delivery.*  TO 'souq_delivery'@'localhost';
+
+FLUSH PRIVILEGES;
+
+
+
+Importing mysql database
+
+mysql -u souq_delivery -p souq_delivery < file.sql
+
+
+nan
+
+##### Python 3.8 #####
+
+cd /home/ubuntu/hosting.alitech.io/public_html/
+
+python3 -m venv venv
+
+source venv/bin/activate
+
+make sure python version is correct
+
+python -V
+
+cd userportal
+
+python3 -m pip install -r requirements.txt
+
+
+Check if all dependencies installed by Running App
+
+python manage.py runserver
+
+if some package is missing and not included in requirements.txt install
+
+python3 -m pip install XXXXX
+
+##### Django 4.1.1 #####
+
+Check Django Version
+
+python3 -m django --version
+
+
+
+##### UWSGI #####
+
+check if uwsgi is working
+
+uwsgi --socket souq.sock --module souq.wsgi --chmod-socket=666
+
+if everyting ok
+
+nano userportal_uwsgi.ini
+
+[uwsgi]
+# full path to Django project's root directory
+chdir            = /home/ubuntu/hosting.alitech.io/public_html/userportal
+# Django's wsgi file
+module           = userportal.wsgi
+
+pythonpath = ..
+# full path to python virtual env
+home             = /home/ubuntu/hosting.alitech.io/public_html/venv
+# enable uwsgi master process
+master          = true
+# maximum number of worker processes
+processes       = 24
+# maximum number of threads
+threads         = 2
+# the socket (use the full path to be safe
+socket          = /home/ubuntu/hosting.alitech.io/public_html/userportal/userportal.sock
+# socket permissions
+chmod-socket    = 666
+# clear environment on exit
+vacuum          = true
+# daemonize uwsgi and write messages into given log
+daemonize       = /home/ubuntu/hosting.alitech.io/public_html/userportal/userportal.log
+
+
+Make sure in above paths are correct
+
+Run app using ini 
+
+uwsgi --ini userportal_uwsgi.ini
+
+
+
+
+
+
+
+UWSGI Service
+
+New Ubuntu User for VSCode Remote
+
+useradd -m -d /home/hostingbyalitech hostingbyalitech
+
+passwd hostingbyalitech
+
+usermod -aG sudo hostingbyalitech
+
+su -s /bin/bash hostingbyalitech
+
+Now Login with VSCode Remote
+
+
+
+nano /etc/ssh/sshd_config
+
+Change:
+#PasswordAuthentication no
+
+to:
+ 
+PasswordAuthentication yes
+
+
+systemctl restart sshd	
+
+
+
+cd /home/hostingbyalitech
+
+cd /home/hostingbyalitech/hosting.alitech.io
+
+cd public_html/venv
+
+mkdir vassals
+
+sudo ln -s /home/hostingbyalitech/realancer.net/public_html/userportal/userportal_uwsgi.ini /home/hostingbyalitech/realancer.net/public_html/venv/vassals/
+
+
+Check if service is working
+
+sudo chown -R hostingbyalitech:hostingbyalitech hosting.alitech.io
+
+uwsgi --emperor /home/hostingbyalitech/hosting.alitech.io/public_html/venv/vassals/ --uid hostingbyalitech --gid hostingbyalitech
+
+nano /etc/systemd/system/hba.uwsgi.service
+
+
+## hba.uwsgi.service
+[Unit]
+Description=uwsgi emperor for Hosting by AliTech
+After=network.target
+[Service]
+User=hostingbyalitech
+Restart=always
+ExecStart=uwsgi --emperor /home/hostingbyalitech/souqdelivery.pk/public_html/venv/vassals/ --uid hostingbyalitech --gid hostingbyalitech
+[Install]
+WantedBy=multi-user.target
+
+
+
+systemctl daemon-reload 
+
+systemctl enable hba.uwsgi.service
+
+systemctl restart hba.uwsgi.service
+
+systemctl status hba.uwsgi.service 
+
+
+
+
+
+
+
+##### Nginx #####
+
+sudo apt install \
+                  git gcc cmake libpcre3 libpcre3-dev \
+                  zlib1g zlib1g-dev openssl libssl-dev
+				  
+				  
+wget https://nginx.org/download/nginx-1.18.0.tar.gz
+tar zxvf nginx-1.18.0.tar.gz
+
+
+git clone https://github.com/google/ngx_brotli.git
+
+cd nginx-1.18.0
+
+# Configure dynamic module
+sudo ./configure --with-compat --add-dynamic-module=../ngx_brotli
+
+# Make
+sudo make modules
+
+sudo cp ./objs/*.so /usr/share/nginx/modules
+
+
+nano /etc/nginx/nginx.conf
+
+user root;
+worker_processes 9;
+worker_rlimit_nofile 50000;
+pid /run/nginx.pid;
+
+include /etc/nginx/modules-enabled/*.conf;
+# Load module section
+load_module "modules/ngx_http_brotli_filter_module.so";
+load_module "modules/ngx_http_brotli_static_module.so";
+
+events {
+        worker_connections 2700;
+        # accept as many connections as possible, may flood worker connections if set too low -- for testing environment
+        multi_accept on;
+}
+
+http {
+        # cache informations about FDs, frequently accessed files
+        # can boost performance, but you need to test those values
+        open_file_cache max=50000 inactive=20s;
+        open_file_cache_valid 30s;
+        open_file_cache_min_uses 2;
+        open_file_cache_errors on;
+
+        # to boost I/O on HDD we can disable access logs
+        access_log off;
+        ##
+        # Basic Settings
+        ##
+
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        #keepalive_timeout 65;
+        #types_hash_max_size 2048;
+        # server_tokens off;
+
+        # server_names_hash_bucket_size 64;
+        # server_name_in_redirect off;
+
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        ##
+        # SSL Settings
+        ##
+
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3; # Dropping SSLv3, ref: POODLE
+        ssl_prefer_server_ciphers on;
+
+        ##
+        # Logging Settings
+        ##
+
+        #access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+
+        ##
+        # Gzip Settings
+        ##
+
+        # Gzip Settings
+        gzip on;
+        gzip_disable "msie6";
+        gzip_vary on;
+        gzip_proxied any;
+        gzip_comp_level 6;
+        gzip_buffers 32 16k;
+        gzip_http_version 1.1;
+        gzip_min_length 250;
+        gzip_types image/jpeg image/bmp image/svg+xml text/plain text/css application/json application/javascript application/x-javascript text/xml application/xml application/xml+rss text/javascript image/x-icon;
+
+        # Brotli Settings
+        brotli on;
+        brotli_comp_level 4;
+        brotli_buffers 32 8k;
+        brotli_min_length 100;
+        brotli_static on;
+        brotli_types image/jpeg image/bmp image/svg+xml text/plain text/css application/json application/javascript application/x-javascript text/xml application/xml application/xml+rss text/javascript image/x-icon;
+        ##
+        # Virtual Host Configs
+        ##
+
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;
+
+        # allow the server to close connection on non responding client, this will free up memory
+        reset_timedout_connection on;
+
+    # request timed out -- default 60
+         client_body_timeout 10;
+
+    # if client stop responding, free up memory -- default 60
+         send_timeout 2;
+
+    # server will close connection after this time -- default 75
+         keepalive_timeout 30;
+
+    # number of requests client can make over keep-alive -- for testing environment
+    #keepalive_requests 100000;
+
+
+
+}
+
+
+
+#mail {
+#       # See sample authentication script at:
+#       # http://wiki.nginx.org/ImapAuthenticateWithApachePhpScript
+#
+#       # auth_http localhost/auth.php;
+#       # pop3_capabilities "TOP" "USER";
+#       # imap_capabilities "IMAP4rev1" "UIDPLUS";
+#
+#       server {
+#               listen     localhost:110;
+#               protocol   pop3;
+#               proxy      on;
+#       }
+#
+#       server {
+#               listen     localhost:143;
+#               protocol   imap;
+#               proxy      on;
+#       }
+#}
+
+
+
+
+
+
+
+
+nano /etc/nginx/sites-available/hosting.alitech.io.conf
+
+upstream hba {
+    server unix:////home/ubuntu/hosting.alitech.io/public_html/userportal/userportal.sock;
+}
+# configuration of the server
+server {
+    listen      8080;
+    server_name hosting.alitech.io www.hosting.alitech.io;
+    charset     utf-8;
+    # max upload size
+    client_max_body_size 75M;
+    # Django media and static files
+    location /media  {
+        alias /home/ubuntu/hosting.alitech.io/public_html/userportal/public/media;
+    }
+    location /static {
+        alias /home/ubuntu/hosting.alitech.io/public_html/userportal/public/static;
+    }
+    # Send all non-media requests to the Django server.
+    location / {
+        uwsgi_pass  hba;
+        include     /home/ubuntu/hosting.alitech.io/public_html/userportal/uwsgi_params;
+    #    fastcgi_pass unix:////home/ubuntu/hosting.alitech.io/public_html/userportal/userportal.sock;
+    }
+
+    #location / {
+    #uwsgi_pass  hba;
+    #    include     /home/ubuntu/beta.hosting.alitech.io/public_html/userportal/uwsgi_params;
+    #    fastcgi_pass unix:/home/ubuntu/beta.hosting.alitech.io/public_html/userportal/userportal/userportal.socket;
+        # for a TCP host/port:
+        # fastcgi_pass   {hostname}:{port};
+
+        # necessary parameter
+    #    fastcgi_param PATH_INFO $fastcgi_script_name;
+
+        # to deal with POST requests
+    #    fastcgi_param REQUEST_METHOD $request_method;
+    #    fastcgi_param CONTENT_TYPE $content_type;
+    #    fastcgi_param CONTENT_LENGTH $content_length;
+
+        # http://stackoverflow.com/questions/605173/how-to-nginx-virtual-servers-fcgi-for-django uses many other parameters,
+        # some may be necessary in some situations
+    #}
+    # pass PHP scripts to FastCGI server
+    #
+	
+
+Create Symbolic Link
+
+ln -s /etc/nginx/sites-available/hosting.alitech.io.conf /etc/nginx/sites-enabled
+
+Restart Nginx Server
+
+systemctl restart nginx
+
+
+##### Memcache #####
+
+Install Memcache in Ubuntu 20
+
+sudo apt install memcached
+
+sudo apt install libmemcached-tools
+
+sudo systemctl start memcached
+
+sudo systemctl enable memcached
+
+Enable port 11211 in firewall not required if you are using Localhost
+
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8000 -j ACCEPT
+
+
+Configure memory required for Memcache
+
+nano /etc/memcached.conf
+
+-m 128
+
+Note: 128 is in mbs
+
+sudo systemctl restart memcached
+
+
+Monitor memcached
+
+watch -td '(echo stats ; echo quit) | nc 127.0.0.1 11211 | grep get_hits '
+
+
+
+ab -n 1000 -c 10  https://www.example.com/
+
+
+
+Configure Django to use Memcache
+
+....
+
+'django.middleware.cache.UpdateCacheMiddleware',  -- > New
+'django.middleware.common.CommonMiddleware',
+'django.middleware.cache.FetchFromCacheMiddleware',  -- > New
+'django.middleware.gzip.GZipMiddleware',  -- > New
+....
+
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
+        'LOCATION': '127.0.0.1:11211',
+   },
+    'RedisCache': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379',
+    },
+     'LocMemCache': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    },
+    'DatabaseCache': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'redis_cache_db_table',
+    }
+}
+
+if you want to use only Memcache remove other cache options in CACHES
+
+install pylibmc package
+
+python3 -m pip install pylibmc
+
+restart your app using uwsgi
+
+uwsgi --ini userportal_uwsgi.ini
+
+
+Restart nginx
+
+systemctl restart nginx
+
+
+
+#### CertBot + Nginx + Varnish ####
+
+sudo certbot certonly --agree-tos --email administrator@hostingbyalitech.com --standalone --preferred-challenges http -d realancer.net -d www.realancer.net
+
+
+
+
+orange
+tkaLRSFtm38RJ5iz
+
+
+
+
