@@ -65,11 +65,11 @@ mysql -u username -p database_name > file.sql
 
 mysql -u root -p
 
-CREATE DATABASE IF NOT EXISTS real_realancer CHARACTER SET utf8;
+CREATE DATABASE IF NOT EXISTS netnet CHARACTER SET utf8;
 
-CREATE USER 'souq_delivery'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
+CREATE USER 'netnet'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
 
-GRANT ALL PRIVILEGES ON souq_delivery.*  TO 'souq_delivery'@'localhost';
+GRANT ALL PRIVILEGES ON netnet.*  TO 'netnet'@'localhost';
 
 FLUSH PRIVILEGES;
 
@@ -77,10 +77,35 @@ FLUSH PRIVILEGES;
 
 Importing mysql database
 
-mysql -u souq_delivery -p souq_delivery < file.sql
+mysql -u netnet -p netnet < file.sql
 
 
 nan
+
+
+Allow remote connections
+
+sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+
+change bind address 
+
+bind MySQL to 0.0.0.0
+
+sudo systemctl restart mysql
+
+
+sudo ufw allow from remote_ip_address to any port 3306
+
+sudo iptables -A INPUT -p tcp --dport 3306 -j ACCEPT
+
+sudo netfilter-persistent save
+sudo netfilter-persistent reload
+
+mysql -u username -h remote_ip_address -p
+
+CREATE USER 'user_or_root'@'remote_ip_address' IDENTIFIED BY 'some_pass';
+GRANT ALL PRIVILEGES ON *.* TO 'user_or_root'@'remote_ip_address';
+
 
 ##### Python 3.8 #####
 
