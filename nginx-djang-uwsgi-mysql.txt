@@ -68,19 +68,21 @@ mysqldump --add-drop-table -u root -p netnet --verbose > netnet.sql
 
 mysql -u root -p
 
-CREATE DATABASE IF NOT EXISTS souq_delivery CHARACTER SET utf8;
+CREATE DATABASE IF NOT EXISTS realancer CHARACTER SET utf8;
 
-CREATE USER 'souq_delivery'@'localhost' IDENTIFIED WITH mysql_native_password BY '5&T#0upcg96xYBz2u2';
+CREATE USER 'realancer'@'*' IDENTIFIED WITH mysql_native_password BY 'password';
 
-GRANT ALL PRIVILEGES ON souq_delivery.*  TO 'souq_delivery'@'localhost';
+GRANT ALL PRIVILEGES ON realancer.*  TO 'realancer'@'*';
+
 
 FLUSH PRIVILEGES;
 
-5&T#0upcg96xYBz2u2
+SET FOREIGN_KEY_CHECKS=0;
+
 
 Importing mysql database
 
-mysql -u souq_delivery -p souq_delivery < file.sql
+mysql -u souq_delivery -p -f -D souq_delivery < file.sql
 
 
 nan
